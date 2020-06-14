@@ -1,7 +1,7 @@
 const express = require('express');
 const User = require('./../models/user');
 const router = new express.Router();
-//const {welcomeEmail,cancelEmail} = require('./../emails/account');
+const {welcomeEmail,cancelEmail} = require('./../emails/account');
 const auth = require('./../middleware/auth');
 const multer = require('multer');
 const sharp = require('sharp');
@@ -21,7 +21,7 @@ router.post('/users', async (req,res)=>{
     const user = new User(req.body);
     try{
         await user.save();
-        //welcomeEmail(user.email, user.name);
+        welcomeEmail(user.email, user.name);
         const token = await user.generateAuthTokens();
         res.status(201).send({user,token});
     }catch(e){
@@ -64,7 +64,7 @@ router.get('/users/me', auth, async (req,res)=>{
 
 
 router.patch('/users/me', auth, async (req,res)=>{
-    const allowedUpdates = ['name','password','email','number'];
+    const allowedUpdates = ['name','password','email','age'];
     const updates = Object.keys(req.body);
     const isValid = updates.every((update)=> allowedUpdates.includes(update))
 
