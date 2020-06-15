@@ -1,10 +1,11 @@
 const express = require('express');
 const User = require('./../models/user');
 const router = new express.Router();
-const {welcomeEmail,cancelEmail} = require('./../emails/account');
+const {welcomeEmail,cancelEmail,forgotPass} = require('./../emails/account');
 const auth = require('./../middleware/auth');
 const multer = require('multer');
 const sharp = require('sharp');
+const generator = require('generate-password');
 const upload = multer({
     limits:{
         fileSize: 1000000
@@ -119,6 +120,22 @@ router.get('/users/:id/avatar', async(req,res)=>{
         res.send(user.avatar)
     }catch(e){
         res.status(500).send(e);
+    }
+})
+
+router.post('/users/forgot', async(req,res)=>{
+    try{
+        const user = await User.findbyEmail(req.body.email);
+        const password = generator.generate({
+            length: 10,
+            numbers: true
+        });
+        user.password = password;
+        forgotPass(user.email,user.name,password);
+        await user.save();
+        res.send(user);
+    }catch(e){
+        res.status(400).send(e);
     }
 })
 
