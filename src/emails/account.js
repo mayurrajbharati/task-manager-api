@@ -4,16 +4,10 @@ let transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.EMAIL,
-      pass: process.env.PASSWORD
-    }
+      pass: process.env.PASSWORD,
+    },
   });
-  
-  var mailOptions = {
-    from: 'apitaskmanager@gmail.com',
-    to: 'banashreesaikia46@gmail.com',
-    subject: 'Sending Email using Node.js',
-    text: 'That was easy!'
-  };
+
   const welcomeEmail = (email,name)=>{
     transporter.sendMail({
         from: process.env.EMAIL,

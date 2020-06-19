@@ -24,7 +24,7 @@ router.post('/users', async (req,res)=>{
         await user.save();
         welcomeEmail(user.email, user.name);
         const token = await user.generateAuthTokens();
-        res.status(201).send({user,token});
+        res.cookie("token",token,{httpOnly: true}).status(201).send(user);
     }catch(e){
         res.status(400).send(e.message);
     }    
@@ -34,31 +34,31 @@ router.post('/users/login', async (req,res)=>{
     try{
             const user = await User.findByCredentials(req.body.email, req.body.password);
             const token = await user.generateAuthTokens();
-            res.send({user,token});
+            res.cookie("token",token,{ httpOnly: true}).send(user);
     }catch(e){
-            res.status(400).send(e);
+            res.status(400).send(e.message);
     }
 });
 
 router.post('/users/logout', auth, async (req,res)=>{
     try{
-        req.user.tokens = req.user.tokens.filter((token)=> token.token !== req.token )
-        await req.user.save();
-        res.send();
+        //req.user.tokens = req.user.tokens.filter((token)=> token.token !== req.token )
+        //await req.user.save();
+        res.clearCookie("token").send({success: true});
     }catch(e){
         res.status(500).send(e);
     }
 })
 
-router.post('/users/logoutAll', auth, async (req,res)=>{
-    try{
-        req.user.tokens = [];
-        await req.user.save();
-        res.send();
-    }catch(e){
-        res.status(500).send(e);
-    }
-})
+// router.post('/users/logoutAll', auth, async (req,res)=>{
+//     try{
+//         req.user.tokens = [];
+//         await req.user.save();
+//         res.send();
+//     }catch(e){
+//         res.status(500).send(e);
+//     }
+// })
 router.get('/users/me', auth, async (req,res)=>{
     res.send(req.user);
 })
