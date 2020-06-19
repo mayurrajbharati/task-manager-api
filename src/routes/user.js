@@ -1,7 +1,7 @@
 const express = require('express');
 const User = require('./../models/user');
 const router = new express.Router();
-const {welcomeEmail,cancelEmail,forgotPass} = require('./../emails/account');
+//const {welcomeEmail,cancelEmail,forgotPass} = require('./../emails/account');
 const auth = require('./../middleware/auth');
 const multer = require('multer');
 const sharp = require('sharp');
@@ -22,9 +22,9 @@ router.post('/users', async (req,res)=>{
     const user = new User(req.body);
     try{
         await user.save();
-        welcomeEmail(user.email, user.name);
+        //welcomeEmail(user.email, user.name);
         const token = await user.generateAuthTokens();
-        res.cookie("token",token,{httpOnly: true}).status(201).send(user);
+        res.cookie("token",token,{ httpOnly: true }).status(201).send(user);
     }catch(e){
         res.status(400).send(e.message);
     }    
@@ -84,7 +84,7 @@ router.patch('/users/me', auth, async (req,res)=>{
 router.delete('/users/me',auth, async (req,res)=>{
     try{
         await req.user.remove();
-        cancelEmail(req.user.email,req.user.name);
+        //cancelEmail(req.user.email,req.user.name);
         res.send(req.user);
     }catch(e){
             res.status(500).send(e);
@@ -123,20 +123,20 @@ router.get('/users/:id/avatar', async(req,res)=>{
     }
 })
 
-router.post('/users/forgot', async(req,res)=>{
-    try{
-        const user = await User.findbyEmail(req.body.email);
-        const password = generator.generate({
-            length: 10,
-            numbers: true
-        });
-        user.password = password;
-        forgotPass(user.email,user.name,password);
-        await user.save();
-        res.send(user);
-    }catch(e){
-        res.status(400).send(e);
-    }
-})
+// router.post('/users/forgot', async(req,res)=>{
+//     try{
+//         const user = await User.findbyEmail(req.body.email);
+//         const password = generator.generate({
+//             length: 10,
+//             numbers: true
+//         });
+//         user.password = password;
+//         forgotPass(user.email,user.name,password);
+//         await user.save();
+//         res.send(user);
+//     }catch(e){
+//         res.status(400).send(e);
+//     }
+// })
 
 module.exports = router;
