@@ -23,8 +23,10 @@ router.post('/users', async (req,res)=>{
     try{
         await user.save();
         //welcomeEmail(user.email, user.name);
-        const token = await user.generateAuthTokens();
-        res.cookie("token",token,{ httpOnly: true }).status(201).send(user);
+        //const token = await user.generateAuthTokens();
+        //console.log(token);
+        res.status(201).send(user);
+        //console.log(req.cookies)
     }catch(e){
         res.status(400).send(e.message);
     }    
@@ -34,17 +36,20 @@ router.post('/users/login', async (req,res)=>{
     try{
             const user = await User.findByCredentials(req.body.email, req.body.password);
             const token = await user.generateAuthTokens();
-            res.cookie("token",token,{ httpOnly: true}).send(user);
+            //console.log(token);
+            res.cookie('authorization',token,{ maxAge: 24*60*60*1000,httpOnly: true}).send(user);
+            //console.log(req.cookies.authorization);
     }catch(e){
             res.status(400).send(e.message);
     }
 });
 
-router.post('/users/logout', auth, async (req,res)=>{
+router.post('/users/logout',async (req,res)=>{
     try{
         //req.user.tokens = req.user.tokens.filter((token)=> token.token !== req.token )
         //await req.user.save();
-        res.clearCookie("token").send({success: true});
+        //console.log(req.cookies.authorization);
+        res.clearCookie('authorization').send({success: true});
     }catch(e){
         res.status(500).send(e);
     }
@@ -83,7 +88,8 @@ router.patch('/users/me', auth, async (req,res)=>{
 
 router.delete('/users/me',auth, async (req,res)=>{
     try{
-        await req.user.remove();
+        const user = await User.findByCredentials(req.body.email, req.body.password);
+        await user.remove();
         //cancelEmail(req.user.email,req.user.name);
         res.send(req.user);
     }catch(e){
