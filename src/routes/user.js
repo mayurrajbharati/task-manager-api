@@ -37,7 +37,7 @@ router.post('/users/login', async (req,res)=>{
     try{
             const user = await User.findByCredentials(req.body.email, req.body.password);
             const token = await user.generateAuthTokens();
-            res.cookie('authorization',token,{ maxAge: 24*60*60*1000,httpOnly: true}).send(`Hi, ${user.name} are successfully logged in!`);
+            res.cookie('authorization',token,{ maxAge: 24*60*60*1000,httpOnly: true}).send(`Hi ${user.name}, you are successfully logged in!`);
     }catch(e){
             res.status(400).send(e.message);
     }
@@ -75,10 +75,10 @@ router.patch('/users/me', auth, async (req,res)=>{
 
 router.delete('/users/me',auth, async (req,res)=>{
     try{
-        const user = await User.findByCredentials(req.body.email, req.body.password);
-        await user.remove();
+        await req.user.remove();
         cancelEmail(req.user.email,req.user.name);
-        res.clearCookie('authorization').send(req.user);
+        res.clearCookie('authorization').send('User successfully removed!');
+        
     }catch(e){
             res.status(500).send(e);
     }
