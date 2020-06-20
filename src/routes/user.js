@@ -1,10 +1,12 @@
 const express = require('express');
 const User = require('./../models/user');
 const router = new express.Router();
-//const {welcomeEmail,cancelEmail,forgotPass} = require('./../emails/account');
+const {welcomeEmail,cancelEmail,forgotPass} = require('./../emails/account');
+const cookieParser= require('cookie-parser');
 const auth = require('./../middleware/auth');
 const multer = require('multer');
 const sharp = require('sharp');
+const jwt = require('jsonwebtoken')
 const generator = require('generate-password');
 const upload = multer({
     limits:{
@@ -18,15 +20,14 @@ const upload = multer({
     }
 })
 
+router.use(cookieParser());
+
 router.post('/users', async (req,res)=>{
     const user = new User(req.body);
     try{
         await user.save();
-        //welcomeEmail(user.email, user.name);
-        //const token = await user.generateAuthTokens();
-        //console.log(token);
+        welcomeEmail(user.email, user.name);
         res.status(201).send(user);
-        //console.log(req.cookies)
     }catch(e){
         res.status(400).send(e.message);
     }    
@@ -36,9 +37,7 @@ router.post('/users/login', async (req,res)=>{
     try{
             const user = await User.findByCredentials(req.body.email, req.body.password);
             const token = await user.generateAuthTokens();
-            //console.log(token);
-            res.cookie('authorization',token,{ maxAge: 24*60*60*1000,httpOnly: true}).send(user);
-            //console.log(req.cookies.authorization);
+            res.cookie('authorization',token,{ maxAge: 24*60*60*1000,httpOnly: true}).send(`Hi, ${user.name} are successfully logged in!`);
     }catch(e){
             res.status(400).send(e.message);
     }
@@ -46,26 +45,14 @@ router.post('/users/login', async (req,res)=>{
 
 router.post('/users/logout',async (req,res)=>{
     try{
-        //req.user.tokens = req.user.tokens.filter((token)=> token.token !== req.token )
-        //await req.user.save();
-        //console.log(req.cookies.authorization);
         res.clearCookie('authorization').send({success: true});
     }catch(e){
         res.status(500).send(e);
     }
 })
 
-// router.post('/users/logoutAll', auth, async (req,res)=>{
-//     try{
-//         req.user.tokens = [];
-//         await req.user.save();
-//         res.send();
-//     }catch(e){
-//         res.status(500).send(e);
-//     }
-// })
 router.get('/users/me', auth, async (req,res)=>{
-    res.send(req.user);
+     res.send(req.user);
 })
 
 
@@ -90,8 +77,8 @@ router.delete('/users/me',auth, async (req,res)=>{
     try{
         const user = await User.findByCredentials(req.body.email, req.body.password);
         await user.remove();
-        //cancelEmail(req.user.email,req.user.name);
-        res.send(req.user);
+        cancelEmail(req.user.email,req.user.name);
+        res.clearCookie('authorization').send(req.user);
     }catch(e){
             res.status(500).send(e);
     }
@@ -129,20 +116,20 @@ router.get('/users/:id/avatar', async(req,res)=>{
     }
 })
 
-// router.post('/users/forgot', async(req,res)=>{
-//     try{
-//         const user = await User.findbyEmail(req.body.email);
-//         const password = generator.generate({
-//             length: 10,
-//             numbers: true
-//         });
-//         user.password = password;
-//         forgotPass(user.email,user.name,password);
-//         await user.save();
-//         res.send(user);
-//     }catch(e){
-//         res.status(400).send(e);
-//     }
-// })
+router.post('/users/forgot', async(req,res)=>{
+    try{
+        const user = await User.findbyEmail(req.body.email);
+        const password = generator.generate({
+            length: 10,
+            numbers: true
+        });
+        user.password = password;
+        forgotPass(user.email,user.name,password);
+        await user.save();
+        res.send('Your password has been reset. Please check your mail!');
+    }catch(e){
+        res.status(400).send(e);
+    }
+})
 
 module.exports = router;
