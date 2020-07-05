@@ -5,10 +5,15 @@ const {welcomeEmail,cancelEmail,forgotPass} = require('./../emails/account');
 const cookieParser= require('cookie-parser');
 const auth = require('./../middleware/auth');
 const multer = require('multer');
-const sharp = require('sharp');
-const jwt = require('jsonwebtoken')
 const generator = require('generate-password');
-const upload = multer({
+
+const storage = multer.diskStorage({
+    destination: './uploads',
+    filename: function(req,file,cb){
+        cb(null,file.originalname);
+    }
+})
+const upload = multer({storage},{
     limits:{
         fileSize: 1000000
     },
@@ -56,8 +61,26 @@ router.get('/users/me', auth, async (req,res)=>{
 })
 
 
-router.patch('/users/me', auth, async (req,res)=>{
-    const allowedUpdates = ['name','password','email','age'];
+router.patch('/users/me/update', auth, async (req,res)=>{
+    const allowedUpdates = ['name','email','age'];
+    const updates = Object.keys(req.body);
+    const isValid = updates.every((update)=> allowedUpdates.includes(update))
+
+    if(!isValid){
+        return res.status(400).send({error: 'Invalid updates'});
+    }
+    try{
+        updates.forEach((update)=> req.user[update] = req.body[update])
+        await req.user.save();
+        res.send(req.user);
+    }catch(e){
+        res.status(400).send(e);
+    }
+})
+
+
+router.patch('/users/me/updatePass', auth, async (req,res)=>{
+    const allowedUpdates = ['password'];
     const updates = Object.keys(req.body);
     const isValid = updates.every((update)=> allowedUpdates.includes(update))
 
@@ -84,11 +107,15 @@ router.delete('/users/me',auth, async (req,res)=>{
     }
 })
 
-router.post('/users/me/avatars',auth , upload.single('avatar'), async (req,res)=>{
-    const buffer = await sharp(req.file.buffer).resize({ width: 250, height: 250}).png().toBuffer();
-    req.user.avatar = buffer;
+router.post('/users/me/avatars', auth , upload.single('avatar'), async (req,res)=>{
+    const imgFile = req.file.filename;
+    req.user.avatar = imgFile;
     await req.user.save();
-    res.send();
+    //const buffer = await sharp(req.file.buffer).resize({ width: 250, height: 250}).png().toBuffer();
+    // req.user.avatar = req.file.buffer;
+    // await req.user.save();
+    console.log(req.user.avatar);
+    res.send(req.file);
 },(error, req, res, next)=>{
     res.status(400).send({
         error: error.message,
